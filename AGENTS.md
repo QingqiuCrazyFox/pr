@@ -33,12 +33,11 @@ When writing adb commands in docs/scripts, use bare `adb` without `-s <serial>`.
 src/proot/                  # Patched proot C source (working copy, NOT vendor/)
 src/pr-cli/                 # Rust CLI (replaces proot-distro.sh)
 src/proot-integration-test/ # Guest-side test binary (runs inside proot, TAP output)
-src/scripts/                # Shell scripts: bootstrap.sh, plugins/
+src/scripts/                # Shell scripts: bootstrap.sh (POSIX)
 android/                    # Android APK (Kotlin + Compose + JNI)
 scripts/                    # Host-side build scripts (build.sh, download-*.sh)
 vendor/                     # Git submodules — READ ONLY, never modify
-docs/                       # Phase documentation, proot-improvement.md
-openspec/                   # Change management (proposal, design, tasks)
+docs/                       # Architecture and feature documentation
 build/                      # Build artifacts (gitignored)
 ```
 
@@ -169,9 +168,8 @@ Command::new("/bin/sh").args(["-c", "apk update 2>&1"]).output()
 
 ### Commit style
 
-Format: `<task-id>: <description>`
-Examples: `T5.3: fix fake root and kernel-release for Debian — 37/37 ALL PASS`
-Task IDs reference `openspec/changes/initial-implementation/tasks.md`.
+Format: `feat|fix|chore|docs|test: <description>`
+Examples: `fix: fake root and kernel-release for Debian`
 
 Commit message policy:
 - Do not add `Co-authored-by` trailers.
@@ -201,16 +199,14 @@ Commit message policy:
 7. **Fake root required** — `--change-id=0:0` (proot `-0`) must always be passed. dpkg and other tools check `getuid() == 0`.
 8. **Kernel release format** — `--kernel-release` takes ONLY the release string (e.g. `6.17.0-pr`), NOT the full `uname` output. The libc6 preinst script parses this with shell arithmetic.
 
-## OpenSpec Workflow
+## Superpowers Workflow
 
-Tasks tracked in `openspec/changes/initial-implementation/tasks.md` with IDs like T5.3, T9.5.
-Use OpenSpec skills for proposing changes, implementing tasks, and archiving.
+Use the Superpowers workflow and skills (`subagent-driven-development`, `brainstorming`, `writing-plans`, `executing-plans`, etc.) for managing tasks, implementing changes, and verifying logic.
 
 ## Key References
 
 - `docs/important-notes.md` — Critical constraints, seccomp handlers, read first
 - `docs/proot-improvement.md` — Our proot fork vs vendor/proot and vendor/termux-proot
-- `docs/phase8-rust-support.md` — vfork/CLONE_VM fix, link2symlink readlink fix
-- `docs/phase9-integration-tests.md` — Integration test suite (37/37 pass)
-- `docs/phase7-targetSdk35.md` — targetSdk 35 compatibility (PROOT_LOADER mechanism)
-- `openspec/changes/initial-implementation/tasks.md` — Full task tracking (~1100 lines)
+- `docs/rust-toolchain-support.md` — vfork/CLONE_VM fix, link2symlink readlink fix
+- `docs/integration-tests.md` — Integration test suite (37/37 pass)
+- `docs/targetsdk35-compatibility.md` — targetSdk 35 compatibility (PROOT_LOADER mechanism)

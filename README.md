@@ -89,7 +89,7 @@ cd src/pr-cli && cargo test
 src/proot/                  # Patched proot C source
 src/pr-cli/                 # Rust CLI — install, login, remove, test, backup, etc.
 src/proot-integration-test/ # Guest-side test binary (TAP output)
-src/scripts/                # Distro plugins (.sh), bootstrap.sh
+src/scripts/                # POSIX bootstrap.sh
 android/                    # Android APK (Kotlin + Jetpack Compose + JNI)
 scripts/                    # Host-side build scripts
 vendor/                     # Git submodules (upstream proot, termux-proot)
@@ -102,25 +102,12 @@ docs/                       # Technical documentation
 |----------|-------------|
 | [`docs/important-notes.md`](docs/important-notes.md) | Critical constraints, seccomp handlers — read first |
 | [`docs/proot-improvement.md`](docs/proot-improvement.md) | Our proot fork vs upstream and Termux (27 sections) |
-| [`docs/phase7-targetSdk35.md`](docs/phase7-targetSdk35.md) | How targetSdk 35 works (PROOT_LOADER mechanism) |
-| [`docs/phase8-rust-support.md`](docs/phase8-rust-support.md) | vfork/CLONE_VM fix, link2symlink readlink fix |
-| [`docs/phase9-integration-tests.md`](docs/phase9-integration-tests.md) | Integration test suite (37/37 pass) |
+| [`docs/targetsdk35-compatibility.md`](docs/targetsdk35-compatibility.md) | How targetSdk 35 works (PROOT_LOADER mechanism) |
+| [`docs/rust-toolchain-support.md`](docs/rust-toolchain-support.md) | vfork/CLONE_VM fix, link2symlink readlink fix |
+| [`docs/integration-tests.md`](docs/integration-tests.md) | Integration test suite (37/37 pass) |
 
 ## Credits
 
 - [proot](https://github.com/proot-me/proot) — upstream proot v5.4.0 (GPL-2.0)
 - [termux-proot](https://github.com/termux/termux-proot) — Termux's proot fork with Android patches (GPL-2.0)
 - [proot-distro](https://github.com/termux/termux-packages/tree/master/packages/proot-distro) — distro plugins (GPL-3.0)
-
-## License
-
-This project uses different licenses for different components. See [LICENSE](LICENSE) for details.
-
-| Component | License | Why |
-|-----------|---------|-----|
-| `src/proot/` (C) | **GPL-2.0-or-later** | Derivative of proot (GPL-2.0) and termux-proot (GPL-2.0) |
-| `src/scripts/plugins/` | **GPL-3.0-or-later** | Derivative of termux-proot-distro plugins (GPL-3.0) |
-| `src/pr-cli/` (Rust) | **MIT** | Clean reimplementation of proot-distro CLI |
-| `src/proot-integration-test/` (Rust) | **MIT** | Standalone test binary |
-| `android/` (Kotlin) | **MIT** | App UI and JNI bridge |
-| `scripts/`, `docs/` | **MIT** | Build scripts and documentation |

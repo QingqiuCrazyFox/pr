@@ -1,4 +1,4 @@
-# Phase 9 — Proot Integration Test Suite
+# Proot Integration Test Suite
 
 Automated regression testing for proot behavior inside Linux distros (Alpine,
 Debian, etc.). A cross-compiled guest binary runs inside proot via `pr-cli test <distro>`,

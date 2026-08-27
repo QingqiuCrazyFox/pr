@@ -1,11 +1,11 @@
 # Important Notes
 
 See also:
-- `docs/phase8-rust-support.md` — Phase 8: Rust toolchain support (vfork/CLONE_VM fix, link2symlink readlink fix)
-- `docs/phase7-targetSdk35.md` — Phase 7: targetSdk 35 compatibility (SELinux W^X bypass, seccomp analysis)
-- `docs/phase6-proot-distro-rust-port.md` — Phase 6: Replace proot-distro.sh with Rust binary
-- `docs/phase5-alpine.md` — Phase 5: Alpine Linux investigation and fixes
-- `docs/phase9-integration-tests.md` — Phase 9: Integration test suite (37/37 pass)
+- `docs/rust-toolchain-support.md` — Rust toolchain support (vfork/CLONE_VM fix, link2symlink readlink fix)
+- `docs/targetsdk35-compatibility.md` — targetSdk 35 compatibility (SELinux W^X bypass, seccomp analysis)
+- `docs/rust-port-pr-cli.md` — Replace proot-distro.sh with Rust binary
+- `docs/alpine-linux-support.md` — Alpine Linux investigation and fixes
+- `docs/integration-tests.md` — Integration test suite (37/37 pass)
 - `docs/proot-improvement.md` — Our proot fork vs vendor/proot and vendor/termux-proot
 
 ---
@@ -144,7 +144,7 @@ library.
 - `src/proot/src/tracee/seccomp.c` — SIGSYS handlers (18 handlers, x0 clobber fix, ENOENT for openat/fstatat64)
 - `src/pr-cli/src/login.rs` — proot invocation with PROOT_LOADER, PROOT_TMP_DIR, arg0("proot"), nativeLibraryDir paths
 - `src/pr-cli/src/shared.rs` — `build_proot_args()` with `--change-id=0:0`, `--kernel-release`, bind mounts
-- `docs/phase5-alpine.md` — Alpine-specific investigation and seccomp findings
+- `docs/alpine-linux-support.md` — Alpine-specific investigation and seccomp findings
 - `docs/proot-improvement.md` — Full comparison of our proot vs vendor versions
 
 ---

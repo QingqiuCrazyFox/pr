@@ -1,4 +1,4 @@
-# Exploration: Replace proot-distro.sh with Rust Binary
+# Pr-cli (Rust Port)
 
 Date: 2026-04-14
 Status: Exploration (pre-Phase 6)

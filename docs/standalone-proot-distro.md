@@ -1,4 +1,4 @@
-# Phase 2: Standalone proot-distro.sh
+# Standalone proot-distro (Legacy Shell Script)
 
 Phase 2 ports the Termux proot-distro shell script to work as a standalone program on Android without any Termux dependency. The script is modified to use static busybox for utilities, static bash for execution, and runtime environment variables instead of build-time templates.
 

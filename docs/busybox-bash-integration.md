@@ -1,4 +1,4 @@
-# Phase 3: Busybox & Bash Integration
+# Busybox & Bash Integration
 
 Phase 3 obtains and integrates static busybox and bash binaries, creates the bootstrap script for first-run initialization, and verifies tool compatibility with our standalone Android environment.
 

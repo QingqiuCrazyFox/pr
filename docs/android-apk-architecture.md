@@ -1,4 +1,4 @@
-# Phase 4: Android APK
+# Android APK Architecture
 
 Phase 4 builds the Android application that wraps the proot-distro infrastructure from Phases 1-3 into a standalone APK (`id.or.oo.pr`). It implements app bootstrapping (asset extraction, native lib setup), a Compose-based distro management UI, a terminal emulator using ConnectBot's termlib, and a PTY-based process execution bridge.
 

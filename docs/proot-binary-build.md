@@ -1,4 +1,4 @@
-# Phase 1: Patched proot Binary
+# Proot Binary Build
 
 Phase 1 produces a statically-linked proot binary for Android arm64, built from the termux-proot fork with additional patches for NDK cross-compilation and Android Bionic compatibility.
 

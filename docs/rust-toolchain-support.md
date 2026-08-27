@@ -1,4 +1,4 @@
-# Phase 8 — Rust Toolchain Support (vfork/CLONE_VM and link2symlink Fixes)
+# Rust Toolchain Support (vfork/CLONE_VM and link2symlink Fixes)
 
 Date: 2026-04-16
 Status: T8.1 Complete, T8.2 Complete, T8.3 Complete, T8.4 Complete
