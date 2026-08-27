@@ -48,10 +48,8 @@ class App : Application() {
 
         try {
             val binDir = File(prefixDir, "bin")
-            val etcDir = File(prefixDir, "etc/pr")
 
             binDir.mkdirs()
-            etcDir.mkdirs()
             homeDir.mkdirs()
             File(prefixDir, "tmp").mkdirs()
 
@@ -59,7 +57,6 @@ class App : Application() {
             createBusyboxSymlinks(binDir)
 
             copyAssetFile("scripts/bootstrap.sh", File(binDir, "bootstrap.sh"))
-            copyAssetPlugins(etcDir)
 
             executeBootstrap()
 
@@ -149,24 +146,6 @@ class App : Application() {
         dest.setExecutable(true, false)
         dest.setReadable(true, false)
         Log.d(TAG, "Installed: ${dest.name}")
-    }
-
-    private fun copyAssetPlugins(etcDir: File) {
-        val pluginFiles = assets.list("plugins") ?: emptyArray()
-        var count = 0
-        for (name in pluginFiles) {
-            if (name.endsWith(".sh")) {
-                val dest = File(etcDir, name)
-                assets.open("plugins/$name").use { input ->
-                    FileOutputStream(dest).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                dest.setReadable(true, false)
-                count++
-            }
-        }
-        Log.d(TAG, "Installed: $count plugins")
     }
 
     private fun executeBootstrap() {

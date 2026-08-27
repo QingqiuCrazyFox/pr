@@ -17,7 +17,7 @@ use crate::oci::{
     OciManifest, OciPlatform, OCI_IMAGE_INDEX_MEDIA_TYPE, OCI_IMAGE_MANIFEST_MEDIA_TYPE,
     DOCKER_MANIFEST_LIST_MEDIA_TYPE, DOCKER_MANIFEST_MEDIA_TYPE,
 };
-use crate::plugin::load_plugins;
+use crate::plugin::{load_plugins, DistroPlugin};
 use crate::source_parse::{InstallSourceInput, InstallSourceInputKind};
 use crate::shared::{
     get_download_cache_dir, get_installed_rootfs_dir,
@@ -1237,6 +1237,23 @@ fn cleanup_on_failure(rootfs: &str, distro_name: &str) {
     }
 }
 
+fn render_override_plugin(plugin: &DistroPlugin, alias: &str) -> String {
+    let mut lines = Vec::new();
+    lines.push(format!("DISTRO_NAME=\"{} - {}\"", plugin.name, alias));
+    if let Some(comment) = &plugin.comment {
+        lines.push(format!("DISTRO_COMMENT=\"{}\"", comment));
+    }
+    let mut arches: Vec<&String> = plugin.tarballs.keys().collect();
+    arches.sort();
+    for arch in arches {
+        if let Some(tb) = plugin.tarballs.get(arch) {
+            lines.push(format!("TARBALL_URL_{}=\"{}\"", arch, tb.url));
+            lines.push(format!("TARBALL_SHA256_{}=\"{}\"", arch, tb.sha256));
+        }
+    }
+    lines.join("\n") + "\n"
+}
+
 pub fn command_install(
     distro_name: &str,
     override_alias: Option<&str>,
@@ -1267,22 +1284,15 @@ pub fn command_install(
     let distro_name = if let Some(alias) = override_alias {
         validate_alias_format(alias)?;
 
-        let override_path = format!("{}/{}.sh", plugins_dir, alias);
         let override_alt = format!("{}/{}.override.sh", plugins_dir, alias);
-        if Path::new(&override_path).exists() || Path::new(&override_alt).exists() {
+        let plugins = load_plugins(Path::new(&plugins_dir));
+        if plugins.iter().any(|p| p.alias == alias) || Path::new(&override_alt).exists() {
             return Err(format!(
                 "distribution with alias '{}' already exists",
                 alias
             ));
         }
 
-        // Create .override.sh by copying original plugin
-        let src_path = format!("{}/{}.sh", plugins_dir, distro_name);
-        if !Path::new(&src_path).exists() {
-            return Err(format!("unknown distribution '{}'", distro_name));
-        }
-
-        let plugins = load_plugins(Path::new(&plugins_dir));
         let orig_plugin = plugins
             .iter()
             .find(|p| p.alias == distro_name)
@@ -1290,12 +1300,9 @@ pub fn command_install(
 
         msg_status(&format!("Creating file '{}.override.sh'...", alias));
 
-        let content = fs::read_to_string(&src_path).map_err(|e| format!("read plugin: {}", e))?;
-        let new_content = content.replace(
-            &format!("DISTRO_NAME=\"{}\"", orig_plugin.name),
-            &format!("DISTRO_NAME=\"{} - {}\"", orig_plugin.name, alias),
-        );
-        fs::write(&override_alt, &new_content)
+        fs::create_dir_all(&plugins_dir).map_err(|e| format!("create plugins dir: {}", e))?;
+        let new_content = render_override_plugin(orig_plugin, alias);
+        fs::write(&override_alt, new_content)
             .map_err(|e| format!("write override plugin: {}", e))?;
 
         alias.to_string()
@@ -1303,10 +1310,8 @@ pub fn command_install(
         distro_name.to_string()
     };
 
-    // Check distro exists
-    let plugin_path = format!("{}/{}.sh", plugins_dir, distro_name);
-    let plugin_alt = format!("{}/{}.override.sh", plugins_dir, distro_name);
-    if !Path::new(&plugin_path).exists() && !Path::new(&plugin_alt).exists() {
+    let plugins = load_plugins(Path::new(&plugins_dir));
+    if !plugins.iter().any(|p| p.alias == distro_name) {
         println!();
         msg_error(&format!(
             "unknown distribution '{}' was requested to be installed.",
@@ -1347,7 +1352,6 @@ pub fn command_install(
     }
 
     // Parse plugin
-    let plugins = load_plugins(Path::new(&plugins_dir));
     let plugin = plugins
         .iter()
         .find(|p| p.alias == distro_name)

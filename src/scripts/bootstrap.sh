@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# bootstrap.sh — First-run setup for standalone proot-distro on Android
+# bootstrap.sh — First-run setup for standalone pr on Android
 #
 # This script MUST be POSIX sh compatible (#!/system/bin/sh).
 # Keep this script POSIX-compatible; avoid bash-isms.
@@ -23,7 +23,6 @@ APP_HOME="${APP_HOME:-/data/data/id.or.oo.pr/files/home}"
 APP_PACKAGE="${APP_PACKAGE:-id.or.oo.pr}"
 
 BIN_DIR="${APP_PREFIX}/bin"
-ETC_DIR="${APP_PREFIX}/etc/pr"
 VAR_DIR="${APP_PREFIX}/var/lib/pr"
 
 MARKER="${APP_PREFIX}/.bootstrapped"
@@ -52,7 +51,6 @@ create_directories() {
     mkdir -p "${VAR_DIR}/dlcache"
     mkdir -p "${APP_HOME}"
     mkdir -p "${APP_PREFIX}/tmp"
-    mkdir -p "${APP_PREFIX}/scripts"
 }
 
 install_busybox() {
@@ -92,44 +90,6 @@ install_proot() {
     log "proot installed"
 }
 
-install_proot_distro() {
-    log "Installing proot-distro.sh..."
-    local src="${APP_PREFIX}/scripts/proot-distro.sh"
-    local dst="${BIN_DIR}/proot-distro"
-    if [ ! -f "$src" ]; then
-        die "proot-distro.sh not found at ${src}"
-    fi
-
-    cp "$src" "$dst"
-    chmod 755 "$dst"
-
-    if grep -q '@APP_PREFIX@' "$dst" 2>/dev/null; then
-        log "Replacing @APP_PREFIX@ template in shebang..."
-        sed -i "s|@APP_PREFIX@|${APP_PREFIX}|g" "$dst"
-    fi
-
-    log "proot-distro installed"
-}
-
-install_plugins() {
-    log "Installing distro plugins..."
-    local plugin_dir="${APP_PREFIX}/plugins"
-    if [ ! -d "$plugin_dir" ]; then
-        log "No plugins directory at ${plugin_dir}, skipping"
-        return
-    fi
-
-    local count=0
-    local f
-    for f in "${plugin_dir}"/*.sh; do
-        [ -f "$f" ] || continue
-        cp "$f" "${ETC_DIR}/"
-        count=$((count + 1))
-    done
-
-    log "${count} plugins installed"
-}
-
 mark_bootstrapped() {
     local ts
     ts=$(date +%s 2>/dev/null || echo "0")
@@ -145,11 +105,8 @@ print_summary() {
     echo "  APP_PACKAGE: ${APP_PACKAGE}"
     echo ""
     echo "  Binaries:    $(ls "${BIN_DIR}" | wc -l)"
-    echo "  Plugins:     $(ls "${ETC_DIR}"/*.sh 2>/dev/null | wc -l)"
-    echo ""
     echo "  proot:       $([ -x "${BIN_DIR}/proot" ] && echo "OK" || echo "MISSING")"
     echo "  busybox:     $([ -x "${BIN_DIR}/busybox" ] && echo "OK" || echo "MISSING")"
-    echo "  proot-distro:$([ -x "${BIN_DIR}/proot-distro" ] && echo "OK" || echo "MISSING")"
     echo ""
     echo "To test:"
     echo "  export PATH=${BIN_DIR}"
@@ -157,7 +114,7 @@ print_summary() {
     echo "  export APP_HOME=${APP_HOME}"
     echo "  export APP_PACKAGE=${APP_PACKAGE}"
     echo "  export PROOT_NO_SECCOMP=1"
-    echo "  proot-distro list"
+    echo "  pr-cli list"
 }
 
 main() {
@@ -168,8 +125,6 @@ main() {
     create_directories
     install_busybox
     install_proot
-    install_proot_distro
-    install_plugins
     mark_bootstrapped
     print_summary
 }

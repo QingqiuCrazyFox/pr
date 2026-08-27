@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# bootstrap.sh — First-run setup for standalone proot-distro on Android
+# bootstrap.sh — First-run setup for standalone pr on Android
 #
 # This script MUST be POSIX sh compatible (#!/system/bin/sh).
 # Called by APK App.kt on first launch.

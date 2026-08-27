@@ -8,7 +8,7 @@ use std::process::Command;
 use libc;
 
 use crate::install_model::load_oci_install_metadata;
-use crate::plugin::load_plugins;
+use crate::plugin::{load_plugins, DistroPlugin};
 use crate::shared::{
     get_download_cache_dir, get_installed_rootfs_dir, get_native_busybox, get_oci_container_dir,
     get_oci_container_manifest_path, get_oci_containers_dir, get_plugins_dir, msg_error,
@@ -233,6 +233,23 @@ fn chmod_readable_recursive(path: &Path) {
     inner(path);
 }
 
+fn render_override_plugin(plugin: &DistroPlugin, alias: &str) -> String {
+    let mut lines = Vec::new();
+    lines.push(format!("DISTRO_NAME=\"{} - {}\"", plugin.name, alias));
+    if let Some(comment) = &plugin.comment {
+        lines.push(format!("DISTRO_COMMENT=\"{}\"", comment));
+    }
+    let mut arches: Vec<&String> = plugin.tarballs.keys().collect();
+    arches.sort();
+    for arch in arches {
+        if let Some(tb) = plugin.tarballs.get(arch) {
+            lines.push(format!("TARBALL_URL_{}=\"{}\"", arch, tb.url));
+            lines.push(format!("TARBALL_SHA256_{}=\"{}\"", arch, tb.sha256));
+        }
+    }
+    lines.join("\n") + "\n"
+}
+
 pub fn command_backup(distro_name: &str, output_path: Option<&str>) -> Result<(), String> {
     let installed_rootfs_dir = get_installed_rootfs_dir();
     let oci_containers_dir = get_oci_containers_dir();
@@ -278,10 +295,12 @@ pub fn command_backup(distro_name: &str, output_path: Option<&str>) -> Result<()
 
     let busybox = get_native_busybox();
     let status = if source_type == InstalledSourceType::Legacy {
-        let plugin_file = if Path::new(&format!("{}/{}.sh", plugins_dir, distro_name)).exists() {
-            format!("{}.sh", distro_name)
+        let plugin_file = if Path::new(&format!("{}/{}.override.sh", plugins_dir, distro_name)).exists() {
+            Some(format!("{}.override.sh", distro_name))
+        } else if Path::new(&format!("{}/{}.sh", plugins_dir, distro_name)).exists() {
+            Some(format!("{}.sh", distro_name))
         } else {
-            format!("{}.override.sh", distro_name)
+            None
         };
         msg_status("Archiving the rootfs and plug-in...");
         let parent_rootfs = Path::new(&installed_rootfs_dir)
@@ -304,22 +323,25 @@ pub fn command_backup(distro_name: &str, output_path: Option<&str>) -> Result<()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
+        let mut args = vec![
+            "tar".to_string(),
+            "-c".to_string(),
+            "--auto-compress".to_string(),
+            "--warning=no-file-ignored".to_string(),
+            "-f".to_string(),
+            output.clone(),
+        ];
+        if let Some(plugin_file) = plugin_file {
+            args.push("-C".to_string());
+            args.push(parent_plugins.clone());
+            args.push(format!("{}/{}", plugins_basename, plugin_file));
+        }
+        args.push("-C".to_string());
+        args.push(parent_rootfs.clone());
+        args.push(format!("{}/{}", rootfs_basename, distro_name));
         Command::new(&busybox)
             .arg0("busybox")
-            .arg("tar")
-            .args([
-                "-c",
-                "--auto-compress",
-                "--warning=no-file-ignored",
-                "-f",
-                &output,
-                "-C",
-                &parent_plugins,
-                &format!("{}/{}", plugins_basename, plugin_file),
-                "-C",
-                &parent_rootfs,
-                &format!("{}/{}", rootfs_basename, distro_name),
-            ])
+            .args(&args)
             .status()
             .map_err(|e| format!("exec tar: {}", e))?
     } else {
@@ -421,6 +443,10 @@ pub fn command_restore(tarball_path: &str) -> Result<(), String> {
         .to_string_lossy()
         .to_string();
 
+    let contains_plugin_entries = listing
+        .lines()
+        .any(|line| line.starts_with("pr/") || line.starts_with("proot-distro/"));
+
     let status = if contains_oci {
         let parent_containers = Path::new(&oci_containers_dir)
             .parent()
@@ -449,23 +475,26 @@ pub fn command_restore(tarball_path: &str) -> Result<(), String> {
             .status()
             .map_err(|e| format!("exec tar: {}", e))?
     } else {
+        let mut args = vec![
+            "tar".to_string(),
+            "-x".to_string(),
+            "--auto-compress".to_string(),
+            "--recursive-unlink".to_string(),
+            "--preserve-permissions".to_string(),
+            "-f".to_string(),
+            tarball_path.to_string(),
+        ];
+        if contains_plugin_entries {
+            args.push("-C".to_string());
+            args.push(parent_plugins.clone());
+            args.push(format!("{}/", plugins_basename));
+        }
+        args.push("-C".to_string());
+        args.push(parent_rootfs.clone());
+        args.push(format!("{}/", rootfs_basename));
         Command::new(&busybox)
             .arg0("busybox")
-            .arg("tar")
-            .args([
-                "-x",
-                "--auto-compress",
-                "--recursive-unlink",
-                "--preserve-permissions",
-                "-f",
-                tarball_path,
-                "-C",
-                &parent_plugins,
-                &format!("{}/", plugins_basename),
-                "-C",
-                &parent_rootfs,
-                &format!("{}/", rootfs_basename),
-            ])
+            .args(&args)
             .status()
             .map_err(|e| format!("exec tar: {}", e))?
     };
@@ -537,9 +566,8 @@ pub fn command_rename(old_alias: &str, new_alias: &str) -> Result<(), String> {
         return Err("target exists".to_string());
     }
 
-    let new_plugin = format!("{}/{}.sh", plugins_dir, new_alias);
     let new_override = format!("{}/{}.override.sh", plugins_dir, new_alias);
-    if Path::new(&new_plugin).exists() || Path::new(&new_override).exists() {
+    if Path::new(&new_override).exists() || plugins.iter().any(|p| p.alias == new_alias) {
         msg_error(&format!(
             "distribution with alias '{}' already exists.",
             new_alias
@@ -556,17 +584,13 @@ pub fn command_rename(old_alias: &str, new_alias: &str) -> Result<(), String> {
     if Path::new(&old_override).exists() {
         fs::rename(&old_override, &new_override)
             .map_err(|e| format!("rename override plugin: {}", e))?;
-    } else if Path::new(&old_plugin).exists() {
-        let content = fs::read_to_string(&old_plugin).map_err(|e| format!("read plugin: {}", e))?;
+    } else {
         let plugin = plugins.iter().find(|p| p.alias == old_alias);
         if let Some(p) = plugin {
-            let new_content = content.replace(
-                &format!("DISTRO_NAME=\"{}\"", p.name),
-                &format!("DISTRO_NAME=\"{} - {}\"", p.name, new_alias),
-            );
-            fs::write(&new_override, new_content)
+            fs::create_dir_all(&plugins_dir).map_err(|e| format!("create plugins dir: {}", e))?;
+            fs::write(&new_override, render_override_plugin(p, new_alias))
                 .map_err(|e| format!("write override plugin: {}", e))?;
-        } else {
+        } else if Path::new(&old_plugin).exists() {
             fs::copy(&old_plugin, &new_override).map_err(|e| format!("copy plugin: {}", e))?;
         }
     }
@@ -945,7 +969,7 @@ mod tests {
     }
 
     #[test]
-    fn command_rename_reports_unknown_distribution_when_plugin_missing() {
+    fn command_rename_reports_not_installed_with_builtin_distribution_catalog() {
         let _guard = env_lock().lock().expect("lock env");
         let tmp_dir = unique_temp_dir("pr-cli-commands-extra-rename-unknown");
         let prefix = tmp_dir.join("usr");
@@ -953,8 +977,8 @@ mod tests {
         std::env::set_var("APP_PREFIX", prefix.to_string_lossy().to_string());
 
         let err = command_rename("debian", "debian-new")
-            .expect_err("rename should fail for unknown distro");
-        assert_eq!(err, "unknown distribution");
+            .expect_err("rename should fail when distro rootfs is absent");
+        assert_eq!(err, "not installed");
 
         std::env::remove_var("APP_PREFIX");
         let _ = fs::remove_dir_all(tmp_dir);
