@@ -18,7 +18,7 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 手动克隆所有依赖（使用官方源） ----
+      # ---- 手动克隆所有依赖（全部使用 GitHub 镜像 + 完整克隆） ----
       - name: Clone all dependencies
         run: |
           mkdir -p vendor
@@ -29,19 +29,19 @@ jobs:
           git checkout 731631f
           cd ../..
 
-          # 2. busybox (官方 HTTPS)
-          git clone https://git.busybox.net/busybox vendor/busybox
+          # 2. busybox (GitHub 镜像，完整克隆)
+          git clone https://github.com/mirror/busybox vendor/busybox
           cd vendor/busybox
           git checkout 2f3b16fc1b46b4b91dabb59025dffa02b2730624
           cd ../..
 
-          # 3. musl (官方 HTTPS)
-          git clone https://git.musl-libc.org/musl vendor/musl
+          # 3. musl (GitHub 官方镜像，完整克隆)
+          git clone https://github.com/musl/musl vendor/musl
           cd vendor/musl
           git checkout 5122f9f3c99fee366167c5de98b31546312921ab
           cd ../..
 
-          # 4. proot + 内部 uthash (GitHub)
+          # 4. proot + 内部 uthash
           git clone https://github.com/proot-me/proot vendor/proot
           cd vendor/proot
           git checkout 5f780cba57ce7ce557a389e1572e0d30026fcbca
@@ -51,28 +51,27 @@ jobs:
           git checkout e493aa90a2833b4655927598f169c31cfcdf7861
           cd ../../..
 
-          # 5. samba (GitHub)
+          # 5. samba
           git clone https://github.com/samba-team/samba vendor/samba
           cd vendor/samba
           git checkout 2f8dfde1210395175e726455bdb63a7b97245a72
           cd ../..
 
-          # 6. termlib (GitHub, 使用最新 master)
+          # 6. termlib (使用最新 master，浅克隆加速)
           git clone --depth=1 https://github.com/connectbot/termlib vendor/termlib
 
-          # 7. termux-proot (GitHub)
+          # 7. termux-proot
           git clone https://github.com/termux/proot vendor/termux-proot
           cd vendor/termux-proot
           git checkout ab2e34614e1bc6ac83c8d9f3edbfaec869ce8b22
           cd ../..
 
-          # 8. termux-proot-distro (GitHub)
+          # 8. termux-proot-distro
           git clone https://github.com/termux/proot-distro vendor/termux-proot-distro
           cd vendor/termux-proot-distro
           git checkout 98b6d7181cfb15094598b5a7254d13c3e6b901db
           cd ../..
 
-          # 验证
           ls -la vendor/
 
       # ---- 设置构建环境 ----
