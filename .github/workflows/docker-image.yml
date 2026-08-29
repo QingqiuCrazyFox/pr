@@ -18,49 +18,73 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 1. 修复子模块 URL 并彻底移除 termlib ----
-      - name: Fix submodules and completely remove termlib
+      # ---- 手动克隆所有子模块（不依赖 Git submodule） ----
+      - name: Clone all dependencies manually
         run: |
-          # 从 .gitmodules 中删除 termlib 部分
-          git config -f .gitmodules --remove-section submodule.vendor/termlib || true
+          mkdir -p vendor
 
-          # 修复其他子模块 URL（使用 GitHub 镜像）
-          sed -i 's|git://busybox.net/busybox.git|https://github.com/mirror/busybox.git|g' .gitmodules
-          sed -i 's|git://git.musl-libc.org/musl.git|https://github.com/musl/musl.git|g' .gitmodules
-          sed -i 's|git://git.samba.org/samba.git|https://github.com/samba-team/samba.git|g' .gitmodules
-          sed -i 's|https://android.googlesource.com/platform/bionic|https://github.com/aosp-mirror/platform_bionic|g' .gitmodules
-          sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
+          # 1. bionic
+          git clone --depth=1 https://github.com/aosp-mirror/platform_bionic vendor/bionic
+          cd vendor/bionic
+          git fetch --depth=1 origin 731631f
+          git checkout 731631f
+          cd ../..
 
-          # 打印 .gitmodules 检查
-          cat .gitmodules
+          # 2. busybox
+          git clone --depth=1 https://github.com/mirror/busybox vendor/busybox
+          cd vendor/busybox
+          git fetch --depth=1 origin 2f3b16fc1b46b4b91dabb59025dffa02b2730624
+          git checkout 2f3b16fc1b46b4b91dabb59025dffa02b2730624
+          cd ../..
 
-      # ---- 2. 同步子模块并彻底清除 termlib 的所有缓存 ----
-      - name: Sync and wipe termlib traces
-        run: |
-          # 同步所有子模块配置（不包括已删除的 termlib）
-          git submodule sync
+          # 3. musl
+          git clone --depth=1 https://github.com/musl/musl vendor/musl
+          cd vendor/musl
+          git fetch --depth=1 origin 5122f9f3c99fee366167c5de98b31546312921ab
+          git checkout 5122f9f3c99fee366167c5de98b31546312921ab
+          cd ../..
 
-          # 从本地 .git/config 中删除 termlib 条目
-          git config --local --remove-section submodule.vendor/termlib || true
+          # 4. proot（含内部子模块 uthash）
+          git clone --depth=1 https://github.com/proot-me/proot vendor/proot
+          cd vendor/proot
+          git fetch --depth=1 origin 5f780cba57ce7ce557a389e1572e0d30026fcbca
+          git checkout 5f780cba57ce7ce557a389e1572e0d30026fcbca
+          # 手动克隆 uthash 到 proot/lib/uthash
+          mkdir -p lib/uthash
+          git clone --depth=1 https://github.com/proot-me/uthash lib/uthash
+          cd lib/uthash
+          git fetch --depth=1 origin e493aa90a2833b4655927598f169c31cfcdf7861
+          git checkout e493aa90a2833b4655927598f169c31cfcdf7861
+          cd ../../..
 
-          # 删除 .git/modules 中的 termlib 缓存
-          rm -rf .git/modules/vendor/termlib
+          # 5. samba
+          git clone --depth=1 https://github.com/samba-team/samba vendor/samba
+          cd vendor/samba
+          git fetch --depth=1 origin 2f8dfde1210395175e726455bdb63a7b97245a72
+          git checkout 2f8dfde1210395175e726455bdb63a7b97245a72
+          cd ../..
 
-          # 删除工作目录中的 termlib 文件夹（如果有）
-          rm -rf vendor/termlib
-
-      # ---- 3. 初始化其余子模块（不再包含 termlib） ----
-      - name: Init submodules
-        run: |
-          # 现在执行更新，不会再处理 termlib
-          git submodule update --init --recursive --depth=1
-
-      # ---- 4. 手动克隆 termlib（最新代码） ----
-      - name: Clone termlib manually
-        run: |
+          # 6. termlib（commit 缺失，直接克隆最新 master）
           git clone --depth=1 https://github.com/connectbot/termlib vendor/termlib
 
-      # ---- 5. 设置构建环境 ----
+          # 7. termux-proot
+          git clone --depth=1 https://github.com/termux/proot vendor/termux-proot
+          cd vendor/termux-proot
+          git fetch --depth=1 origin ab2e34614e1bc6ac83c8d9f3edbfaec869ce8b22
+          git checkout ab2e34614e1bc6ac83c8d9f3edbfaec869ce8b22
+          cd ../..
+
+          # 8. termux-proot-distro
+          git clone --depth=1 https://github.com/termux/proot-distro vendor/termux-proot-distro
+          cd vendor/termux-proot-distro
+          git fetch --depth=1 origin 98b6d7181cfb15094598b5a7254d13c3e6b901db
+          git checkout 98b6d7181cfb15094598b5a7254d13c3e6b901db
+          cd ../..
+
+          # 验证所有目录已存在
+          ls -la vendor/
+
+      # ---- 设置构建环境 ----
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -85,7 +109,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
 
-      # ---- 6. 构建步骤 ----
+      # ---- 构建（按你的步骤） ----
       - name: Build proot
         run: |
           chmod +x scripts/build.sh
