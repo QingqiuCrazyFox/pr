@@ -18,7 +18,7 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 手动克隆所有依赖（全部使用 GitHub 镜像 + 完整克隆） ----
+      # ---- 手动克隆所有依赖 ----
       - name: Clone all dependencies
         run: |
           mkdir -p vendor
@@ -29,13 +29,14 @@ jobs:
           git checkout 731631f
           cd ../..
 
-          # 2. busybox (GitHub 镜像，完整克隆)
-          git clone https://github.com/mirror/busybox vendor/busybox
+          # 2. busybox (官方 HTTP，带重试)
+          git clone http://git.busybox.net/busybox vendor/busybox || \
+            (sleep 5 && git clone http://git.busybox.net/busybox vendor/busybox)
           cd vendor/busybox
           git checkout 2f3b16fc1b46b4b91dabb59025dffa02b2730624
           cd ../..
 
-          # 3. musl (GitHub 官方镜像，完整克隆)
+          # 3. musl (GitHub 镜像)
           git clone https://github.com/musl/musl vendor/musl
           cd vendor/musl
           git checkout 5122f9f3c99fee366167c5de98b31546312921ab
@@ -57,7 +58,7 @@ jobs:
           git checkout 2f8dfde1210395175e726455bdb63a7b97245a72
           cd ../..
 
-          # 6. termlib (使用最新 master，浅克隆加速)
+          # 6. termlib (最新 master)
           git clone --depth=1 https://github.com/connectbot/termlib vendor/termlib
 
           # 7. termux-proot
