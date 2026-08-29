@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       # ---- 1. 修复子模块 URL 并彻底移除 termlib ----
-      - name: Fix submodules and remove termlib
+      - name: Fix submodules and completely remove termlib
         run: |
           # 从 .gitmodules 中删除 termlib 部分
           git config -f .gitmodules --remove-section submodule.vendor/termlib || true
@@ -31,29 +31,36 @@ jobs:
           sed -i 's|https://android.googlesource.com/platform/bionic|https://github.com/aosp-mirror/platform_bionic|g' .gitmodules
           sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
 
-          # 打印修改后的 .gitmodules 用于检查
+          # 打印 .gitmodules 检查
           cat .gitmodules
 
-      # ---- 2. 同步子模块配置，并完全取消注册 termlib ----
-      - name: Sync and deinit termlib
+      # ---- 2. 同步子模块并彻底清除 termlib 的所有缓存 ----
+      - name: Sync and wipe termlib traces
         run: |
+          # 同步所有子模块配置（不包括已删除的 termlib）
           git submodule sync
-          # 强制取消注册 termlib（如果存在）
-          git submodule deinit -f vendor/termlib || true
-          # 删除可能残留的目录
+
+          # 从本地 .git/config 中删除 termlib 条目
+          git config --local --remove-section submodule.vendor/termlib || true
+
+          # 删除 .git/modules 中的 termlib 缓存
+          rm -rf .git/modules/vendor/termlib
+
+          # 删除工作目录中的 termlib 文件夹（如果有）
           rm -rf vendor/termlib
 
-      # ---- 3. 初始化其余子模块（不会再处理 termlib） ----
+      # ---- 3. 初始化其余子模块（不再包含 termlib） ----
       - name: Init submodules
         run: |
+          # 现在执行更新，不会再处理 termlib
           git submodule update --init --recursive --depth=1
 
-      # ---- 4. 手动克隆 termlib（使用最新代码） ----
+      # ---- 4. 手动克隆 termlib（最新代码） ----
       - name: Clone termlib manually
         run: |
           git clone --depth=1 https://github.com/connectbot/termlib vendor/termlib
 
-      # ---- 5. 设置 JDK、Rust、Android SDK 等 ----
+      # ---- 5. 设置构建环境 ----
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -84,7 +91,7 @@ jobs:
           chmod +x scripts/build.sh
           ./scripts/build.sh --arch=arm64
 
-      - name: Build integration test (optional)
+      - name: Build integration test
         run: |
           cd src/proot-integration-test
           cargo build --target aarch64-linux-android --release
