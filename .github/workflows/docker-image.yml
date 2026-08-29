@@ -18,56 +18,55 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 手动克隆所有依赖（完整克隆，确保 commit 可访问） ----
-      - name: Clone all dependencies manually
+      # ---- 手动克隆所有依赖（使用官方源） ----
+      - name: Clone all dependencies
         run: |
           mkdir -p vendor
 
-          # 1. bionic
+          # 1. bionic (aosp-mirror)
           git clone https://github.com/aosp-mirror/platform_bionic vendor/bionic
           cd vendor/bionic
           git checkout 731631f
           cd ../..
 
-          # 2. busybox
-          git clone https://github.com/mirror/busybox vendor/busybox
+          # 2. busybox (官方 HTTPS)
+          git clone https://git.busybox.net/busybox vendor/busybox
           cd vendor/busybox
           git checkout 2f3b16fc1b46b4b91dabb59025dffa02b2730624
           cd ../..
 
-          # 3. musl
-          git clone https://github.com/musl/musl vendor/musl
+          # 3. musl (官方 HTTPS)
+          git clone https://git.musl-libc.org/musl vendor/musl
           cd vendor/musl
           git checkout 5122f9f3c99fee366167c5de98b31546312921ab
           cd ../..
 
-          # 4. proot（含内部子模块 uthash）
+          # 4. proot + 内部 uthash (GitHub)
           git clone https://github.com/proot-me/proot vendor/proot
           cd vendor/proot
           git checkout 5f780cba57ce7ce557a389e1572e0d30026fcbca
-          # 手动克隆 uthash 到 proot/lib/uthash
           mkdir -p lib/uthash
           git clone https://github.com/proot-me/uthash lib/uthash
           cd lib/uthash
           git checkout e493aa90a2833b4655927598f169c31cfcdf7861
           cd ../../..
 
-          # 5. samba（大仓库，完整克隆可能较慢，但为了稳定，完整克隆）
+          # 5. samba (GitHub)
           git clone https://github.com/samba-team/samba vendor/samba
           cd vendor/samba
           git checkout 2f8dfde1210395175e726455bdb63a7b97245a72
           cd ../..
 
-          # 6. termlib（commit 缺失，直接克隆最新 master，使用浅克隆节省时间）
+          # 6. termlib (GitHub, 使用最新 master)
           git clone --depth=1 https://github.com/connectbot/termlib vendor/termlib
 
-          # 7. termux-proot
+          # 7. termux-proot (GitHub)
           git clone https://github.com/termux/proot vendor/termux-proot
           cd vendor/termux-proot
           git checkout ab2e34614e1bc6ac83c8d9f3edbfaec869ce8b22
           cd ../..
 
-          # 8. termux-proot-distro
+          # 8. termux-proot-distro (GitHub)
           git clone https://github.com/termux/proot-distro vendor/termux-proot-distro
           cd vendor/termux-proot-distro
           git checkout 98b6d7181cfb15094598b5a7254d13c3e6b901db
@@ -101,7 +100,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
 
-      # ---- 构建（按你的步骤） ----
+      # ---- 构建步骤 ----
       - name: Build proot
         run: |
           chmod +x scripts/build.sh
