@@ -18,12 +18,15 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 手动克隆所有依赖 ----
+      # ---- 手动克隆所有依赖（禁用交互式认证） ----
       - name: Clone all dependencies
+        env:
+          GIT_TERMINAL_PROMPT: 0
+          GIT_ASKPASS: echo
         run: |
           mkdir -p vendor
 
-          # 1. bionic (aosp-mirror)
+          # 1. bionic
           git clone https://github.com/aosp-mirror/platform_bionic vendor/bionic
           cd vendor/bionic
           git checkout 731631f
@@ -36,7 +39,7 @@ jobs:
           git checkout 2f3b16fc1b46b4b91dabb59025dffa02b2730624
           cd ../..
 
-          # 3. musl (GitHub 镜像)
+          # 3. musl (GitHub HTTPS，禁用交互)
           git clone https://github.com/musl/musl vendor/musl
           cd vendor/musl
           git checkout 5122f9f3c99fee366167c5de98b31546312921ab
