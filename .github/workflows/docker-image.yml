@@ -5,7 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:   # 支持手动触发
+  workflow_dispatch:
 
 env:
   RUST_BACKTRACE: 1
@@ -16,19 +16,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ---------- 代码检出（含子模块处理） ----------
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: false          # 先不自动拉取
           fetch-depth: 0
 
-      - name: Convert submodule URLs to HTTPS and init
+      - name: Prepare submodule URLs and clone
         run: |
-          # 把 .gitmodules 中的所有 SSH URL 替换为 HTTPS
+          # 将 SSH 协议改为 HTTPS（处理 github.com 子模块）
           sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
-          # 同步新的 URL 到 .git/config
           git submodule sync --recursive
-          # 初始化并拉取所有子模块（递归）
+          # 全局将 git:// 协议替换为 http://（解决 busybox 连接问题）
+          git config --global url."http://".insteadOf git://
+          # 初始化并拉取所有子模块（递归，depth=1 加速）
           git submodule update --init --recursive --depth=1
 
       # ---------- 安装系统依赖 ----------
@@ -53,7 +55,6 @@ jobs:
           ndk-version: r27c
           add-to-path: false
           local-cache: true
-        # 该 action 会自动设置 ANDROID_NDK_HOME 环境变量，无需手动指定
 
       # ---------- 设置 Rust ----------
       - name: Setup Rust
@@ -83,7 +84,6 @@ jobs:
       - name: Build proot
         run: scripts/build.sh --arch=arm64
         env:
-          # 如果脚本需要显式使用 NDK，它会自动读取 $ANDROID_NDK_HOME
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
       # ---------- 2. 构建 test binary (Rust) ----------
@@ -128,7 +128,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      # ---------- 上传 APK 作为构建产物 ----------
+      # ---------- 上传 APK ----------
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
