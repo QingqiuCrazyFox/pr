@@ -18,25 +18,26 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 修复子模块 URL（关键修复） ----
+      # ---- 修复子模块 URL（使用 GitHub 镜像） ----
       - name: Fix submodule URLs
         run: |
-          # 1. Bionic：aosp-mirror 使用下划线
+          # 1. Busybox → GitHub 镜像
+          sed -i 's|git://busybox.net/busybox.git|https://github.com/mirror/busybox.git|g' .gitmodules
+
+          # 2. Musl → GitHub 官方镜像
+          sed -i 's|git://git.musl-libc.org/musl.git|https://github.com/musl/musl.git|g' .gitmodules
+
+          # 3. Samba → GitHub 官方仓库
+          sed -i 's|git://git.samba.org/samba.git|https://github.com/samba-team/samba.git|g' .gitmodules
+
+          # 4. Bionic → AOSP 镜像
           sed -i 's|https://android.googlesource.com/platform/bionic|https://github.com/aosp-mirror/platform_bionic|g' .gitmodules
-
-          # 2. Busybox：官方 Git 域名是 git.busybox.net
-          sed -i 's|git://busybox.net|http://git.busybox.net|g' .gitmodules
-
-          # 3. Musl：官方 Git 域名是 git.musl-libc.org
-          sed -i 's|git://git.musl-libc.org|http://git.musl-libc.org|g' .gitmodules
-
-          # 4. Samba：支持 https
-          sed -i 's|git://git.samba.org|https://git.samba.org|g' .gitmodules
 
           # 5. GitHub SSH → HTTPS
           sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
 
-          cat .gitmodules   # 打印检查
+          # 打印修改结果
+          cat .gitmodules
 
       - name: Init submodules
         run: |
