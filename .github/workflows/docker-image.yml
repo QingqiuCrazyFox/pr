@@ -19,12 +19,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: false          # 先不自动拉取
           fetch-depth: 0
 
-      - name: Initialize submodules (with remote)
+      - name: Convert submodule URLs to HTTPS and init
         run: |
-          git submodule update --init --recursive --remote --depth=1
+          # 把 .gitmodules 中的所有 SSH URL 替换为 HTTPS
+          sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
+          # 同步新的 URL 到 .git/config
+          git submodule sync --recursive
+          # 初始化并拉取所有子模块（递归）
+          git submodule update --init --recursive --depth=1
 
       # ---------- 安装系统依赖 ----------
       - name: Install system dependencies
