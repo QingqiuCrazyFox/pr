@@ -18,70 +18,62 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 手动克隆所有子模块（不依赖 Git submodule） ----
+      # ---- 手动克隆所有依赖（完整克隆，确保 commit 可访问） ----
       - name: Clone all dependencies manually
         run: |
           mkdir -p vendor
 
           # 1. bionic
-          git clone --depth=1 https://github.com/aosp-mirror/platform_bionic vendor/bionic
+          git clone https://github.com/aosp-mirror/platform_bionic vendor/bionic
           cd vendor/bionic
-          git fetch --depth=1 origin 731631f
           git checkout 731631f
           cd ../..
 
           # 2. busybox
-          git clone --depth=1 https://github.com/mirror/busybox vendor/busybox
+          git clone https://github.com/mirror/busybox vendor/busybox
           cd vendor/busybox
-          git fetch --depth=1 origin 2f3b16fc1b46b4b91dabb59025dffa02b2730624
           git checkout 2f3b16fc1b46b4b91dabb59025dffa02b2730624
           cd ../..
 
           # 3. musl
-          git clone --depth=1 https://github.com/musl/musl vendor/musl
+          git clone https://github.com/musl/musl vendor/musl
           cd vendor/musl
-          git fetch --depth=1 origin 5122f9f3c99fee366167c5de98b31546312921ab
           git checkout 5122f9f3c99fee366167c5de98b31546312921ab
           cd ../..
 
           # 4. proot（含内部子模块 uthash）
-          git clone --depth=1 https://github.com/proot-me/proot vendor/proot
+          git clone https://github.com/proot-me/proot vendor/proot
           cd vendor/proot
-          git fetch --depth=1 origin 5f780cba57ce7ce557a389e1572e0d30026fcbca
           git checkout 5f780cba57ce7ce557a389e1572e0d30026fcbca
           # 手动克隆 uthash 到 proot/lib/uthash
           mkdir -p lib/uthash
-          git clone --depth=1 https://github.com/proot-me/uthash lib/uthash
+          git clone https://github.com/proot-me/uthash lib/uthash
           cd lib/uthash
-          git fetch --depth=1 origin e493aa90a2833b4655927598f169c31cfcdf7861
           git checkout e493aa90a2833b4655927598f169c31cfcdf7861
           cd ../../..
 
-          # 5. samba
-          git clone --depth=1 https://github.com/samba-team/samba vendor/samba
+          # 5. samba（大仓库，完整克隆可能较慢，但为了稳定，完整克隆）
+          git clone https://github.com/samba-team/samba vendor/samba
           cd vendor/samba
-          git fetch --depth=1 origin 2f8dfde1210395175e726455bdb63a7b97245a72
           git checkout 2f8dfde1210395175e726455bdb63a7b97245a72
           cd ../..
 
-          # 6. termlib（commit 缺失，直接克隆最新 master）
+          # 6. termlib（commit 缺失，直接克隆最新 master，使用浅克隆节省时间）
           git clone --depth=1 https://github.com/connectbot/termlib vendor/termlib
 
           # 7. termux-proot
-          git clone --depth=1 https://github.com/termux/proot vendor/termux-proot
+          git clone https://github.com/termux/proot vendor/termux-proot
           cd vendor/termux-proot
-          git fetch --depth=1 origin ab2e34614e1bc6ac83c8d9f3edbfaec869ce8b22
           git checkout ab2e34614e1bc6ac83c8d9f3edbfaec869ce8b22
           cd ../..
 
           # 8. termux-proot-distro
-          git clone --depth=1 https://github.com/termux/proot-distro vendor/termux-proot-distro
+          git clone https://github.com/termux/proot-distro vendor/termux-proot-distro
           cd vendor/termux-proot-distro
-          git fetch --depth=1 origin 98b6d7181cfb15094598b5a7254d13c3e6b901db
           git checkout 98b6d7181cfb15094598b5a7254d13c3e6b901db
           cd ../..
 
-          # 验证所有目录已存在
+          # 验证
           ls -la vendor/
 
       # ---- 设置构建环境 ----
