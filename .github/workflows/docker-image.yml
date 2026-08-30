@@ -65,7 +65,14 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-build-
-      
+            
+      - name: Link proot source
+        run: |
+          mkdir -p src
+          ln -sf ../vendor/proot src/proot
+          # 验证
+          ls -la src/proot/src/loader/script.h
+
       - name: Debug loader directory
         run: |
           echo "=== Checking loader directory ==="
@@ -74,7 +81,6 @@ jobs:
           find . -name "script.h" -o -name "Script.h" 2>/dev/null
           echo "=== Checking git submodules ==="
           git submodule status
-
       
       # ---------- 1. 构建 Proot (arm64) ----------
       - name: Build proot
