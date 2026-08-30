@@ -68,10 +68,9 @@ jobs:
             
       - name: Link proot source
         run: |
-          mkdir -p src
-          ln -sf ../vendor/proot src/proot
+          ln -s ./vendor/proot/src/loader ./src/proot/src/loader
           # 验证
-          ls -la src/proot/src/loader/script.h
+          ls -la ./src/proot/src/loader/script.h
 
       - name: Debug loader directory
         run: |
