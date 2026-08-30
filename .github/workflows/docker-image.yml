@@ -18,12 +18,16 @@ jobs:
           submodules: false
           fetch-depth: 0
 
-      # ---- 手动克隆所有依赖（禁用交互式认证） ----
+      # ---- 强制匿名克隆（禁用所有认证机制） ----
       - name: Clone all dependencies
         env:
           GIT_TERMINAL_PROMPT: 0
-          GIT_ASKPASS: echo
+          GIT_ASKPASS: /bin/echo
         run: |
+          # 清空全局凭据助手和HTTP头
+          git config --global --unset-all credential.helper || true
+          git config --global --unset-all http.extraheader || true
+
           mkdir -p vendor
 
           # 1. bionic
@@ -32,15 +36,15 @@ jobs:
           git checkout 731631f
           cd ../..
 
-          # 2. busybox (官方 HTTP，带重试)
-          git clone http://git.busybox.net/busybox vendor/busybox || \
-            (sleep 5 && git clone http://git.busybox.net/busybox vendor/busybox)
+          # 2. busybox (官方 HTTP，更稳定)
+          git clone http://git.busybox.net/busybox vendor/busybox
           cd vendor/busybox
           git checkout 2f3b16fc1b46b4b91dabb59025dffa02b2730624
           cd ../..
 
-          # 3. musl (GitHub HTTPS，禁用交互)
-          git clone https://github.com/musl/musl vendor/musl
+          # 3. musl (使用 GitHub 公开访问，并强制无认证)
+          # 通过添加 --config "http.extraheader=" 来禁用任何额外的header
+          git clone --config http.extraheader= https://github.com/musl/musl vendor/musl
           cd vendor/musl
           git checkout 5122f9f3c99fee366167c5de98b31546312921ab
           cd ../..
@@ -61,7 +65,7 @@ jobs:
           git checkout 2f8dfde1210395175e726455bdb63a7b97245a72
           cd ../..
 
-          # 6. termlib (最新 master)
+          # 6. termlib (浅克隆)
           git clone --depth=1 https://github.com/connectbot/termlib vendor/termlib
 
           # 7. termux-proot
@@ -78,7 +82,7 @@ jobs:
 
           ls -la vendor/
 
-      # ---- 设置构建环境 ----
+      # ---- 构建环境 ----
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
