@@ -65,12 +65,6 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-build-
-            
-      - name: Link proot source
-        run: |
-          ln -s ./vendor/proot/src/loader ./src/proot/src/loader
-          # 验证
-          ls -la ./src/proot/src/loader/script.h
 
       - name: Debug loader directory
         run: |
