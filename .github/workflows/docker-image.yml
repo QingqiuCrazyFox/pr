@@ -77,7 +77,7 @@ jobs:
       
       # ---------- 1. 构建 Proot (arm64) ----------
       - name: Build proot
-        run: scripts/build.sh --arch=arm64 --ndk-path=$ANDROID_NDK_HOME
+        run: scripts/build.sh --arch=arm64 --ndk-path=$ANDROID_NDK_HOME --skip-ndk
         env:
           # 如果脚本需要显式使用 NDK，它会自动读取 $ANDROID_NDK_HOME
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
