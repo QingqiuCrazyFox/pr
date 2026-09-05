@@ -69,7 +69,7 @@ jobs:
       - name: Debug loader directory
         run: |
           echo "=== Checking loader directory ==="
-          ls -la src/proot/src/loader/ || echo "Directory not found"
+          ls -la ./src/proot/src/loader/ || echo "Directory not found"
           echo "=== Checking for script.h ==="
           find . -name "script.h" -o -name "Script.h" 2>/dev/null
           echo "=== Checking git submodules ==="
