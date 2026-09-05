@@ -32,16 +32,7 @@ jobs:
             python3 \
             wget \
             unzip
-
-      # ---------- 设置 Android NDK (r27c) ----------
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r27c
-          add-to-path: false
-          local-cache: true
-        # 该 action 会自动设置 ANDROID_NDK_HOME 环境变量，无需手动指定
-
+            
       # ---------- 设置 Rust ----------
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
